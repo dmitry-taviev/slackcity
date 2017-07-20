@@ -2,6 +2,7 @@ version: '2'
 services:
   slackcity:
     build: .
+    restart: always
     environment:
       TC_HOST: your.tc.host
       TC_PROJECT: ProjectName
