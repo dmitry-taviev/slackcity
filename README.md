@@ -1,4 +1,16 @@
 # SlackCity - build notifications without plugins #
+## Quickstart ##
+```
+docker run \
+      -e TC_HOST=your.tc.host \
+      -e TC_PROJECT=ProjectName \
+      -e TC_USER=teamcity-username \
+      -e TC_PASSWORD=teamcity-password \
+      -e SLACK_TOKEN=slack-oauth-access-token \
+      -e SLACK_CHANNEL="#yourchannel" \
+      neueda/slackcity
+```
+
 ## Usage ##
 First, create your own docker-compose file from distribution:
 
