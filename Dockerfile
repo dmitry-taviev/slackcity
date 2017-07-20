@@ -4,4 +4,4 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN yarn install
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "index.js"]
