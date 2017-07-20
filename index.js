@@ -71,9 +71,9 @@ const testStatus = async (client, build) => {
 
 const pretext = build => `*${build.buildType.projectName}* build results:`;
 
-const color = build => build.status === "FAILURE" ? "danger" : "good";
+const color = build => build.status === "SUCCESS" ? "good" : "danger";
 
-const title = build => `Build "${build.buildType.name}" #${build.number} ${build.status === "FAILURE" ? "FAILED" : "PASSED"}`;
+const title = build => `Build "${build.buildType.name}" #${build.number} ${build.status === "SUCCESS" ? "SUCCEEDED" : "FAILED"}`;
 
 const commitLink = (version) => {
     const github = "https://github.com/neo-technology/neo4j-desktop/commit/";
