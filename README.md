@@ -1,5 +1,5 @@
-#SlackCity - build notifications without plugins
-##Usage
+# SlackCity - build notifications without plugins #
+## Usage ##
 First, create your own docker-compose file from distribution:
 
 `cp docker-compose.dist.yml docker-compose.yml`
