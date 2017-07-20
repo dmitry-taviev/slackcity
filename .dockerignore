@@ -1,0 +1,4 @@
+.configrc
+docker-compose.yml
+dist
+node_modules
