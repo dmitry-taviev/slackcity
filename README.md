@@ -1,7 +1,7 @@
 # SlackCity - build notifications without plugins #
 ## Quickstart ##
 ```
-docker run \
+docker run -d \
       -e TC_HOST=your.tc.host \
       -e TC_PROJECT=ProjectName \
       -e TC_USER=teamcity-username \
@@ -29,4 +29,4 @@ environment:
 
 Finally, run SlackCity and enjoy!
 
-`docker-compose up`
+`docker-compose up -d`
