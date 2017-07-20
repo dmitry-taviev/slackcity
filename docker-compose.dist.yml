@@ -4,6 +4,7 @@ services:
     build: .
     environment:
       TC_HOST: your.tc.host
+      TC_PROJECT: ProjectName
       TC_USER: teamcity-username
       TC_PASSWORD: teamcity-password
       SLACK_TOKEN: slack-oauth-access-token

@@ -4,7 +4,7 @@ const SlackClient = require("@slack/client").WebClient;
 
 const listBuilds = async (client, beginWithID) => {
     const {build: unsorted} = await client.build.list({
-        project: "DesktopApp",
+        project: process.env.TC_PROJECT,
         state: 'finished',
         sinceBuild: {
             id: beginWithID
