@@ -2,7 +2,7 @@
 ##Usage
 First, create your own docker-compose file from distribution:
 
-`cp docker-compose.dist.ymp docker-compose.yml`
+`cp docker-compose.dist.yml docker-compose.yml`
 
 Next, set proper environment variable values in your compose file:
 ```
