@@ -67,7 +67,7 @@ const failedTestLink = (build, test) => link(
 
 const testStatus = async (client, build) => {
     let testStatus = ":rollsafe: There were no tests";
-    if (!build.testOccurrences.count) {
+    if (typeof build.testOccurrences === "undefined" || !build.testOccurrences.count) {
         return testStatus;
     }
     try {
