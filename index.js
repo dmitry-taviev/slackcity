@@ -64,15 +64,12 @@ const detailsOfBuild = async (client, id) => await client.build.detail({id});
 
 const listTests = async (client, build) => await client.httpClient.readJSON(`testOccurrences?locator=build:${build.id}`);
 
-const detailsOfTest = async (client, id) => {
-    const {test} = await client.httpClient.readJSON(`testOccurrences/${id}`);
-    return test;
-};
+const detailsOfTest = async (client, id) => await client.httpClient.readJSON(`testOccurrences/${id}`);
 
 const testEmoji = test => test.ignored ? ":okay:" : ":goberserk:";
 
 const failedTestLink = (build, test) => link(
-    `${build.webUrl}&tab=buildResultsDiv#testNameId${test.id}`,
+    `${build.webUrl}&tab=buildResultsDiv#testNameId${test.test.id}`,
     `${testEmoji(test)} \`${test.name}\``
 );
 
