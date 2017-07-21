@@ -60,9 +60,11 @@ const detailsOfTest = async (client, id) => {
     return test;
 };
 
+const testEmoji = test => test.ignored ? ":okay:" : ":goberserk:";
+
 const failedTestLink = (build, test) => link(
     `${build.webUrl}&tab=buildResultsDiv#testNameId${test.id}`,
-    `:goberserk: \`${test.name}\``
+    `${testEmoji(test)} \`${test.name}\``
 );
 
 const testStatus = async (client, build) => {
