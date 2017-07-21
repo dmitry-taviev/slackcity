@@ -117,7 +117,7 @@ const main = async () => {
     const channel = process.env.SLACK_CHANNEL;
     const timeout = 10000;
 
-    let beginWithID = 1744599;
+    let beginWithID = 0;
     const lastBuilds = {};
     let running = false;
 
