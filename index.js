@@ -19,7 +19,7 @@ const listBuilds = async (client, beginWithID) => {
 };
 
 const slackSend = async (slack, tc, id, channel) => {
-    const build = await details(tc, id);
+    const build = await detailsOfBuild(tc, id);
     return await slack.chat.postMessage(channel, null, {
         attachments: [{
             pretext: pretext(build),
@@ -51,21 +51,41 @@ const slackSend = async (slack, tc, id, channel) => {
     });
 };
 
-const details = async (client, id) => await client.build.detail({id});
+const detailsOfBuild = async (client, id) => await client.build.detail({id});
+
+const listTests = async (client, build) => await client.httpClient.readJSON(`testOccurrences?locator=build:${build.id}`);
+
+const detailsOfTest = async (client, id) => {
+    const {test} = await client.httpClient.readJSON(`testOccurrences/${id}`);
+    return test;
+};
+
+const failedTestLink = (build, test) => link(
+    `${build.webUrl}&tab=buildResultsDiv#testNameId${test.id}`,
+    `:goberserk: \`${test.name}\``
+);
 
 const testStatus = async (client, build) => {
     let testStatus = ":rollsafe: There were no tests";
+    if (!build.testOccurrences.count) {
+        return testStatus;
+    }
     try {
-        const {testOccurrence: tests} = await client.httpClient.readJSON(`testOccurrences?locator=build:${build.id}`);
+        const {testOccurrence: tests} = await listTests(client, build);
         const failing = tests.filter(test => test.status !== "SUCCESS");
         if (!failing.length) {
             testStatus = `:awesome: All ${tests.length} tests passed!`;
-        } else if (failing.length) {
-            testStatus = failing
-                .map(test => `:goberserk: \`${test.name}\``)
-                .join("\n");
+        } else {
+            testStatus = (await Promise.all(
+                failing.map(async test => failedTestLink(
+                        build,
+                        await detailsOfTest(client, test.id)
+                    ))
+            )).join("\n");
         }
-    } catch (err) {}
+    } catch (err) {
+        console.log("ERROR:", err);
+    }
     return testStatus;
 };
 
@@ -75,10 +95,12 @@ const color = build => build.status === "SUCCESS" ? "good" : "danger";
 
 const title = build => `Build "${build.buildType.name}" #${build.number} ${build.status === "SUCCESS" ? "SUCCEEDED" : "FAILED"}`;
 
-const commitLink = (version) => {
-    const github = "https://github.com/neo-technology/neo4j-desktop/commit/";
-    return `<${github}${version}|\`${version.substring(0, 8)}\`>`;
-};
+const link = (href, text) => `<${href}|${text}>`;
+
+const commitLink = version => link(
+        `https://github.com/neo-technology/neo4j-desktop/commit/${version}`,
+        `\`${version.substring(0, 8)}\``
+    );
 
 const commits = build => build.lastChanges.change
     .map(change => `${commitLink(change.version)} - _${change.username}_`)
@@ -95,7 +117,7 @@ const main = async () => {
     const channel = process.env.SLACK_CHANNEL;
     const timeout = 10000;
 
-    let beginWithID = 0;
+    let beginWithID = 1744599;
     const lastBuilds = {};
     let running = false;
 
