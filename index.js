@@ -6,16 +6,14 @@ const listBuilds = async (client, beginWithID) => {
     const {build: unsorted} = await client.build.list({
         project: process.env.TC_PROJECT,
         state: 'finished',
-        sinceBuild: {
-            id: beginWithID
-        },
         lookupLimit: 10,
     });
     if (typeof unsorted === "undefined") {
         return [];
     }
     return unsorted
-        .sort((build1, build2) => build2.id - build1.id);
+        .sort((build1, build2) => build2.id - build1.id)
+        .filter(build => build.id > beginWithID);
 };
 
 const slackSend = async (slack, tc, id, channel) => {
