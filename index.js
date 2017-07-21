@@ -57,7 +57,7 @@ const slackSend = async (slack, tc, id, channel) => {
 
 const durationOfBuild = async (client, id) => {
     const stats = await client.httpClient.readJSON(`builds/id:${id}/statistics`);
-    return prettyMs(stats.property.find(property => property.name === "BuildDuration").value);
+    return prettyMs(parseInt(stats.property.find(property => property.name === "BuildDuration").value));
 };
 
 const detailsOfBuild = async (client, id) => await client.build.detail({id});
