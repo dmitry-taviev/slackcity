@@ -129,19 +129,23 @@ const main = async () => {
         }
         running = true;
         try {
+            console.log(`searching builds newer than ${beginWithID}`);
             const builds = await listBuilds(tc, beginWithID);
             if (beginWithID === 0 && builds.length) {
                 beginWithID = builds[0].id;
                 running = false;
                 return;
             }
+            console.log(`found ${builds.length} builds`);
             builds.forEach(async (build) => {
                 if (
                     typeof lastBuilds[build.buildTypeId] === 'undefined' ||
                     lastBuilds[build.buildTypeId].id < build.id
                 ) {
+                    console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
                     await slackSend(slack, tc, build.id, channel);
                     lastBuilds[build.buildTypeId] = build.id;
+                    console.log('done', lastBuilds);
                 }
             });
             running = false;
