@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@slack/client": "^3.10.0",
+    "pretty-ms": "^3.0.0",
     "teamcity-client": "^1.0.11"
   },
   "devDependencies": {

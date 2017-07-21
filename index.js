@@ -1,6 +1,7 @@
 
 const TeamcityClient = require("teamcity-client");
 const SlackClient = require("@slack/client").WebClient;
+const prettyMs = require('pretty-ms');
 
 const listBuilds = async (client, beginWithID) => {
     const {build: unsorted} = await client.build.list({
@@ -26,6 +27,11 @@ const slackSend = async (slack, tc, id, channel) => {
             title_link: build.webUrl,
             fields: [
                 {
+                    title: "Duration",
+                    value: await durationOfBuild(tc, build.id),
+                    short: true
+                },
+                {
                     title: "Agent",
                     value: build.agent.name,
                     short: true,
@@ -47,6 +53,11 @@ const slackSend = async (slack, tc, id, channel) => {
             mrkdwn_in: ["pretext", "fields"]
         }],
     });
+};
+
+const durationOfBuild = async (client, id) => {
+    const stats = await client.httpClient.readJSON(`builds/id:${id}/statistics`);
+    return prettyMs(stats.property.find(property => property.name === "BuildDuration").value);
 };
 
 const detailsOfBuild = async (client, id) => await client.build.detail({id});
