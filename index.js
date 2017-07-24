@@ -34,7 +34,7 @@ const slackSend = async (slack, tc, id, channel) => {
                 },
                 {
                     title: "Agent",
-                    value: build.agent.name,
+                    value: agent(build),
                     short: true
                 },
                 {
@@ -59,6 +59,16 @@ const slackSend = async (slack, tc, id, channel) => {
             mrkdwn_in: ["pretext", "fields"]
         }],
     });
+};
+
+const agent = (build) => {
+    let emoji = ":linux:";
+    if (build.projectName.indexOf("osx") !== 0) {
+        emoji = ":osx:";
+    } else if (build.projectName.indexOf("win") !== 0) {
+        emoji = ":windows:"
+    }
+    return `${emoji} ${build.agent.name}`;
 };
 
 const releaseLink = async (client, build) => {
