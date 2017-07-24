@@ -1,7 +1,8 @@
 
 const TeamcityClient = require("teamcity-client");
 const SlackClient = require("@slack/client").WebClient;
-const prettyMs = require('pretty-ms');
+const prettyMs = require("pretty-ms");
+const filesize = require("filesize");
 
 const listBuilds = async (client, beginWithID) => {
     const {build: unsorted} = await client.build.list({
@@ -34,12 +35,17 @@ const slackSend = async (slack, tc, id, channel) => {
                 {
                     title: "Agent",
                     value: build.agent.name,
-                    short: true,
+                    short: true
                 },
                 {
                     title: "Status",
                     value: build.statusText,
-                    short: true,
+                    short: true
+                },
+                {
+                    title: "Download",
+                    value: await releaseLink(tc, build),
+                    short: true
                 },
                 {
                     title: "Tests",
@@ -47,12 +53,25 @@ const slackSend = async (slack, tc, id, channel) => {
                 },
                 {
                     title: "Commits",
-                    value: commits(build)
+                    value: await commits(tc, build)
                 }
             ],
             mrkdwn_in: ["pretext", "fields"]
         }],
     });
+};
+
+const releaseLink = async (client, build) => {
+    const {file: files} = await client.httpClient.readJSON(`builds/id:${build.id}/artifacts/children`);
+    const fileName = "release.zip";
+    const release = files.find(file => file.name === fileName);
+    if (!release) {
+        return "Release not available";
+    }
+    return link(
+        `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${fileName}`,
+        `release.zip (${filesize(release.size)})`
+    );
 };
 
 const durationOfBuild = async (client, id) => {
@@ -105,14 +124,27 @@ const title = build => `Build "${build.buildType.name}" #${build.number} ${build
 
 const link = (href, text) => `<${href}|${text}>`;
 
-const commitLink = version => link(
-        `https://github.com/neo-technology/neo4j-desktop/commit/${version}`,
+const commitLink = (revision, version) => link(
+        `https://github.com/${revision["vcs-root-instance"].name}/commit/${version}`,
         `\`${version.substring(0, 8)}\``
     );
 
-const commits = build => build.lastChanges.change
-    .map(change => `${commitLink(change.version)} - _${change.username}_`)
-    .join("\n");
+const commitMessage = async (client, changeId) => {
+    const {comment} = await client.httpClient.readJSON(`changes/id:${changeId}`);
+    return comment.split("\n")[0];
+};
+
+const commits = async (client, build) => {
+    const commits = await Promise.all(
+        build.lastChanges.change
+            .map(async (change) => {
+                const link = commitLink(build.revisions.revision[0], change.version);
+                const message = await commitMessage(client, change.id);
+                return `${link} ${message} - _${change.username}_`;
+            })
+    );
+    return commits.join("\n");
+};
 
 const main = async () => {
     const tc = new TeamcityClient({
@@ -139,8 +171,10 @@ const main = async () => {
             const builds = await listBuilds(tc, beginWithID);
             if (beginWithID === 0 && builds.length) {
                 beginWithID = builds[0].id;
-                running = false;
-                return;
+                if (process.env.NODE_ENV !== "development") {
+                    running = false;
+                    return;
+                }
             }
             console.log(`found ${builds.length} builds`);
             builds.forEach(async (build) => {
