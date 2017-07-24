@@ -135,6 +135,9 @@ const commitMessage = async (client, changeId) => {
 };
 
 const commits = async (client, build) => {
+    if (typeof build.lastChanges === "undefined") {
+        return "Nothing changed";
+    }
     const commits = await Promise.all(
         build.lastChanges.change
             .map(async (change) => {
@@ -178,15 +181,19 @@ const main = async () => {
             }
             console.log(`found ${builds.length} builds`);
             await Promise.all(
-                builds.map(async (build) => {
+                builds.reverse().map(async (build) => {
                     if (
                         typeof lastBuilds[build.buildTypeId] === 'undefined' ||
                         lastBuilds[build.buildTypeId].id < build.id
                     ) {
                         console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
-                        await slackSend(slack, tc, build.id, channel);
-                        lastBuilds[build.buildTypeId] = build.id;
-                        console.log('done', lastBuilds);
+                        try {
+                            await slackSend(slack, tc, build.id, channel);
+                            lastBuilds[build.buildTypeId] = build.id;
+                            console.log('done', lastBuilds);
+                        } catch (err) {
+                            console.log("SEND ERROR:", err);
+                        }
                     }
                 })
             );
