@@ -177,17 +177,19 @@ const main = async () => {
                 }
             }
             console.log(`found ${builds.length} builds`);
-            builds.forEach(async (build) => {
-                if (
-                    typeof lastBuilds[build.buildTypeId] === 'undefined' ||
-                    lastBuilds[build.buildTypeId].id < build.id
-                ) {
-                    console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
-                    await slackSend(slack, tc, build.id, channel);
-                    lastBuilds[build.buildTypeId] = build.id;
-                    console.log('done', lastBuilds);
-                }
-            });
+            await Promise.all(
+                builds.map(async (build) => {
+                    if (
+                        typeof lastBuilds[build.buildTypeId] === 'undefined' ||
+                        lastBuilds[build.buildTypeId].id < build.id
+                    ) {
+                        console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
+                        await slackSend(slack, tc, build.id, channel);
+                        lastBuilds[build.buildTypeId] = build.id;
+                        console.log('done', lastBuilds);
+                    }
+                })
+            );
             running = false;
         } catch (err) {
             console.log("ERROR:", err);
