@@ -153,24 +153,20 @@ const commitMessage = async (client, changeId) => {
 };
 
 const commits = async (client, build) => {
-    const placeholder = "Nothing changed";
-    if (typeof build.lastChanges === "undefined") {
-        return placeholder;
+    if (
+        typeof build.lastChanges === "undefined" ||
+        typeof build.revisions.revision === "undefined"
+    ) {
+        return "Nothing changed";
     }
     const commits = await Promise.all(
         build.lastChanges.change
             .map(async (change) => {
-                if (typeof build.revisions.revision === "undefined") {
-                    return null;
-                }
                 const link = commitLink(build.revisions.revision[0], change.version);
                 const message = await commitMessage(client, change.id);
                 return `${link} ${message} - _${change.username}_`;
             })
     );
-    if (!commits.filter(commit => commit !== null).length) {
-        return placeholder;
-    }
     return commits.join("\n");
 };
 
