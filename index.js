@@ -153,16 +153,28 @@ const commitMessage = async (client, changeId) => {
 };
 
 const commits = async (client, build) => {
+    const placeholder = "Nothing changed";
+    if (typeof build.lastChanges === "undefined") {
+        return placeholder;
+    }
+    let revision = null;
     if (
-        typeof build.lastChanges === "undefined" ||
-        typeof build.revisions.revision === "undefined"
+        typeof build.revisions.revision === "undefined" &&
+        build["snapshot-dependencies"].count
     ) {
-        return "Nothing changed";
+        try {
+            const snapshot = await detailsOfBuild(client, build["snapshot-dependencies"].build[0].id);
+            revision = snapshot.revisions.revision[0];
+        } catch (err) {
+            return placeholder;
+        }
+    } else {
+        revision = build.revisions.revision[0];
     }
     const commits = await Promise.all(
         build.lastChanges.change
             .map(async (change) => {
-                const link = commitLink(build.revisions.revision[0], change.version);
+                const link = commitLink(revision, change.version);
                 const message = await commitMessage(client, change.id);
                 return `${link} ${message} - _${change.username}_`;
             })
