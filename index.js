@@ -34,7 +34,7 @@ const slackSend = async (slack, tc, id, channel) => {
                 },
                 {
                     title: "Agent",
-                    value: agent(build),
+                    value: await agent(tc, build),
                     short: true
                 },
                 {
@@ -61,12 +61,20 @@ const slackSend = async (slack, tc, id, channel) => {
     });
 };
 
-const agent = (build) => {
+const agent = async (client, build) => {
     let emoji = ":linux:";
-    if (build.projectName.indexOf("osx") !== 0) {
-        emoji = ":osx:";
-    } else if (build.projectName.indexOf("win") !== 0) {
-        emoji = ":windows:"
+    try {
+        const agent = await client.httpClient.readJSON(`agents/id:${build.agent.id}`);
+        let {value: os} = agent.properties.property
+            .find(property => property.name === "teamcity.agent.jvm.os.name");
+        os = os.toLowerCase();
+        if (os.indexOf("mac") > -1) {
+            emoji = ":osx:";
+        } else if (os.indexOf("win") > -1) {
+            emoji = ":windows:"
+        }
+    } catch (err) {
+        console.log("AGENT ERROR:", err);
     }
     return `${emoji} ${build.agent.name}`;
 };
@@ -145,17 +153,24 @@ const commitMessage = async (client, changeId) => {
 };
 
 const commits = async (client, build) => {
+    const placeholder = "Nothing changed";
     if (typeof build.lastChanges === "undefined") {
-        return "Nothing changed";
+        return placeholder;
     }
     const commits = await Promise.all(
         build.lastChanges.change
             .map(async (change) => {
+                if (typeof build.revisions.revision === "undefined") {
+                    return null;
+                }
                 const link = commitLink(build.revisions.revision[0], change.version);
                 const message = await commitMessage(client, change.id);
                 return `${link} ${message} - _${change.username}_`;
             })
     );
+    if (!commits.filter(commit => commit !== null).length) {
+        return placeholder;
+    }
     return commits.join("\n");
 };
 
