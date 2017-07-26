@@ -169,6 +169,7 @@ const commits = async (client, build) => {
         try {
             const snapshot = await detailsOfBuild(client, build["snapshot-dependencies"].build[0].id);
             revision = snapshot.revisions.revision[0];
+            build.lastChanges = snapshot.lastChanges;
         } catch (err) {
             return placeholder;
         }
