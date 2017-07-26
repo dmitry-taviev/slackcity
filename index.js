@@ -203,6 +203,10 @@ const main = async () => {
         }
         running = true;
         try {
+            const lastIDs = Object.values(lastBuilds);
+            if (lastIDs.length) {
+                beginWithID = Math.max(...lastIDs);
+            }
             console.log(`searching builds newer than ${beginWithID}`);
             const builds = await listBuilds(tc, beginWithID);
             if (beginWithID === 0 && builds.length) {
@@ -217,7 +221,7 @@ const main = async () => {
                 builds.reverse().map(async (build) => {
                     if (
                         typeof lastBuilds[build.buildTypeId] === 'undefined' ||
-                        lastBuilds[build.buildTypeId].id < build.id
+                        lastBuilds[build.buildTypeId] < build.id
                     ) {
                         console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
                         try {
@@ -227,6 +231,8 @@ const main = async () => {
                         } catch (err) {
                             console.log("SEND ERROR:", err);
                         }
+                    } else {
+                        console.log("SKIPPING", build.buildTypeId, build.id);
                     }
                 })
             );
