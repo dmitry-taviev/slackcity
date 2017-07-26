@@ -25,6 +25,7 @@ environment:
       TC_PASSWORD: teamcity-password
       SLACK_TOKEN: slack-oauth-access-token
       SLACK_CHANNEL: "#yourchannel"
+      BUILD_WHITELIST: "Build1,Build2"
 ```
 
 Finally, run SlackCity and enjoy!

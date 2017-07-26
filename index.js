@@ -4,7 +4,7 @@ const SlackClient = require("@slack/client").WebClient;
 const prettyMs = require("pretty-ms");
 const filesize = require("filesize");
 
-const listBuilds = async (client, beginWithID) => {
+const listBuilds = async (client, beginWithID, whitelist) => {
     const {build: unsorted} = await client.build.list({
         project: process.env.TC_PROJECT,
         state: 'finished',
@@ -13,9 +13,13 @@ const listBuilds = async (client, beginWithID) => {
     if (typeof unsorted === "undefined") {
         return [];
     }
-    return unsorted
+    const sorted = unsorted
         .sort((build1, build2) => build2.id - build1.id)
         .filter(build => build.id > beginWithID);
+    if (whitelist.length) {
+        return sorted.filter(build => whitelist.includes(build.buildTypeId));
+    }
+    return sorted;
 };
 
 const slackSend = async (slack, tc, id, channel) => {
@@ -193,6 +197,13 @@ const main = async () => {
     const channel = process.env.SLACK_CHANNEL;
     const timeout = 10000;
 
+    let whitelist = [];
+    if (process.env.BUILD_WHITELIST) {
+        whitelist = process.env.BUILD_WHITELIST
+            .split(",")
+            .map(type => `${process.env.TC_PROJECT}_${type}`);
+    }
+
     let beginWithID = 0;
     const lastBuilds = {};
     let running = false;
@@ -208,7 +219,7 @@ const main = async () => {
                 beginWithID = Math.max(...lastIDs);
             }
             console.log(`searching builds newer than ${beginWithID}`);
-            const builds = await listBuilds(tc, beginWithID);
+            const builds = await listBuilds(tc, beginWithID, whitelist);
             if (beginWithID === 0 && builds.length) {
                 beginWithID = builds[0].id;
                 if (process.env.NODE_ENV !== "development") {
