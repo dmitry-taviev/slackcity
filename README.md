@@ -1,4 +1,6 @@
 # SlackCity - build notifications without plugins #
+[![Docker Automated buil](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/neueda/slackcity/)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
 ## Quickstart ##
 ```
 docker run -d \
