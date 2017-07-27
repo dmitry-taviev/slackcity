@@ -158,9 +158,6 @@ const commitMessage = async (client, changeId) => {
 
 const commits = async (client, build) => {
     const placeholder = "Nothing changed";
-    if (typeof build.lastChanges === "undefined") {
-        return placeholder;
-    }
     let revision = null;
     if (
         typeof build.revisions.revision === "undefined" &&
@@ -175,6 +172,9 @@ const commits = async (client, build) => {
         }
     } else {
         revision = build.revisions.revision[0];
+    }
+    if (typeof build.lastChanges === "undefined") {
+        return placeholder;
     }
     const commits = await Promise.all(
         build.lastChanges.change
