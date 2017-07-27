@@ -91,7 +91,7 @@ const releaseLink = async (client, build) => {
         return "Release not available";
     }
     return link(
-        `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${fileName}`,
+        `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${release.name}`,
         `release.zip (${filesize(release.size)})`
     );
 };
