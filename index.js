@@ -85,8 +85,8 @@ const agent = async (client, build) => {
 
 const releaseLink = async (client, build) => {
     const {file: files} = await client.httpClient.readJSON(`builds/id:${build.id}/artifacts/children`);
-    const fileName = "release.zip";
-    const release = files.find(file => file.name === fileName);
+    const fileNames = ["release.zip", "packaged-binaries.zip"];
+    const release = files.find(file => fileNames.includes(file.name));
     if (!release) {
         return "Release not available";
     }
