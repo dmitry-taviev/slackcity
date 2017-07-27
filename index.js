@@ -217,7 +217,7 @@ const main = async () => {
         try {
             const lastIDs = Object.values(lastBuilds);
             if (lastIDs.length) {
-                beginWithID = Math.max(...lastIDs);
+                beginWithID = Math.min(...lastIDs);
             }
             console.log(`searching builds newer than ${beginWithID}`);
             const builds = await listBuilds(tc, beginWithID, whitelist);
