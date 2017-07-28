@@ -4,6 +4,42 @@ const SlackClient = require("@slack/client").WebClient;
 const prettyMs = require("pretty-ms");
 const filesize = require("filesize");
 
+const lastFinishedBuilds = async (client, whitelist) => {
+    const project = await client.project.detail({
+        id: process.env.TC_PROJECT
+    });
+    const lastBuilds = {};
+    if (project.buildTypes.count) {
+        project.buildTypes.buildType
+            .filter(buidType => !whitelist.length || whitelist.includes(buidType.id))
+            .forEach((buildType) => {
+                lastBuilds[buildType.id] = 0;
+            });
+    }
+    await Promise.all(
+        Object.keys(lastBuilds).map(async (buildTypeID) => {
+            const {id} = await lastBuild(client, buildTypeID);
+            if (typeof id !== "undefined") {
+                lastBuilds[buildTypeID] = id;
+            }
+        })
+    );
+    return lastBuilds;
+};
+
+const lastBuild = async (client, typeID) => {
+    const {build} = await client.build.list({
+        project: process.env.TC_PROJECT,
+        state: "finished",
+        lookupLimit: 1,
+        buildType: typeID
+    });
+    if (typeof build === "undefined") {
+        return null;
+    }
+    return build[0];
+};
+
 const listBuilds = async (client, beginWithID, whitelist) => {
     const {build: unsorted} = await client.build.list({
         project: process.env.TC_PROJECT,
@@ -13,13 +49,10 @@ const listBuilds = async (client, beginWithID, whitelist) => {
     if (typeof unsorted === "undefined") {
         return [];
     }
-    const sorted = unsorted
+    return unsorted
         .sort((build1, build2) => build2.id - build1.id)
-        .filter(build => build.id > beginWithID);
-    if (whitelist.length) {
-        return sorted.filter(build => whitelist.includes(build.buildTypeId));
-    }
-    return sorted;
+        .filter(build => build.id > beginWithID)
+        .filter(build => !whitelist.length || whitelist.includes(build.buildTypeId));
 };
 
 const slackSend = async (slack, tc, id, channel) => {
@@ -84,7 +117,7 @@ const agent = async (client, build) => {
 };
 
 const releaseLink = async (client, build) => {
-    const {file: files} = await client.httpClient.readJSON(`builds/id:${build.id}/artifacts/children`);
+    const {file: files} = await client.artifact.children({id: build.id}, "");
     const fileNames = ["release.zip", "packaged-binaries.zip"];
     const release = files.find(file => fileNames.includes(file.name));
     if (!release) {
@@ -152,7 +185,7 @@ const commitLink = (revision, version) => link(
     );
 
 const commitMessage = async (client, changeId) => {
-    const {comment} = await client.httpClient.readJSON(`changes/id:${changeId}`);
+    const {comment} = await client.change.detail(changeId);
     return comment.split("\n")[0];
 };
 
@@ -188,6 +221,8 @@ const commits = async (client, build) => {
 };
 
 const main = async () => {
+    console.log("INITIALIZING..");
+
     const tc = new TeamcityClient({
         protocol: "https://",
         host: process.env.TC_HOST,
@@ -205,8 +240,6 @@ const main = async () => {
             .map(type => `${process.env.TC_PROJECT}_${type}`);
     }
 
-    let beginWithID = 0;
-    const lastBuilds = {};
     let running = false;
 
     const loop = async () => {
@@ -215,19 +248,23 @@ const main = async () => {
         }
         running = true;
         try {
+            //force finished builds check to catch slower builds
+            const lastBuilds = await lastFinishedBuilds(tc, whitelist);
+            console.log("initial state:", lastBuilds);
             const lastIDs = Object.values(lastBuilds);
+            let beginWithID = 0;
             if (lastIDs.length) {
                 beginWithID = Math.min(...lastIDs);
             }
             console.log(`searching builds newer than ${beginWithID}`);
             const builds = await listBuilds(tc, beginWithID, whitelist);
-            if (beginWithID === 0 && builds.length) {
-                beginWithID = builds[0].id;
-                if (process.env.NODE_ENV !== "development") {
-                    running = false;
-                    return;
-                }
-            }
+            // if (beginWithID === 0 && builds.length) {
+            //     beginWithID = builds[0].id;
+            //     if (process.env.NODE_ENV !== "development") {
+            //         running = false;
+            //         return;
+            //     }
+            // }
             console.log(`found ${builds.length} builds`);
             await Promise.all(
                 builds.reverse().map(async (build) => {
@@ -238,6 +275,7 @@ const main = async () => {
                         console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
                         try {
                             await slackSend(slack, tc, build.id, channel);
+                            //update finished builds to avoid duplicates within same iteration
                             lastBuilds[build.buildTypeId] = build.id;
                             console.log('done', lastBuilds);
                         } catch (err) {
