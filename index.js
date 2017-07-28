@@ -258,13 +258,6 @@ const main = async () => {
             }
             console.log(`searching builds newer than ${beginWithID}`);
             const builds = await listBuilds(tc, beginWithID, whitelist);
-            // if (beginWithID === 0 && builds.length) {
-            //     beginWithID = builds[0].id;
-            //     if (process.env.NODE_ENV !== "development") {
-            //         running = false;
-            //         return;
-            //     }
-            // }
             console.log(`found ${builds.length} builds`);
             await Promise.all(
                 builds.reverse().map(async (build) => {
