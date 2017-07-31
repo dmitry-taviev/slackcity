@@ -242,6 +242,8 @@ const main = async () => {
 
     let running = false;
 
+    const sentBuilds = [];
+
     const loop = async () => {
         if (running) {
             return;
@@ -252,6 +254,9 @@ const main = async () => {
             const lastBuilds = await lastFinishedBuilds(tc, whitelist);
             console.log("initial state:", lastBuilds);
             const lastIDs = Object.values(lastBuilds);
+            if (!sentBuilds.length) {
+                lastIDs.forEach(id => sentBuilds.push(id));
+            }
             let beginWithID = 0;
             if (lastIDs.length) {
                 beginWithID = Math.min(...lastIDs);
@@ -263,13 +268,17 @@ const main = async () => {
                 builds.reverse().map(async (build) => {
                     if (
                         typeof lastBuilds[build.buildTypeId] === 'undefined' ||
-                        lastBuilds[build.buildTypeId] < build.id
+                        lastBuilds[build.buildTypeId] < build.id ||
+                        !sentBuilds.includes(build.id)
                     ) {
                         console.log(`sending notification for ${build.buildTypeId}#${build.number} (id:${build.id})`);
                         try {
                             await slackSend(slack, tc, build.id, channel);
                             //update finished builds to avoid duplicates within same iteration
-                            lastBuilds[build.buildTypeId] = build.id;
+                            if (lastBuilds[build.buildTypeId] < build.id) {
+                                lastBuilds[build.buildTypeId] = build.id;
+                            }
+                            sentBuilds.push(build.id);
                             console.log('done', lastBuilds);
                         } catch (err) {
                             console.log("SEND ERROR:", err);
