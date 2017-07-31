@@ -185,7 +185,7 @@ const commitLink = (revision, version) => link(
     );
 
 const commitMessage = async (client, changeId) => {
-    const {comment} = await client.change.detail(changeId);
+    const {comment} = await client.changes.detail(changeId);
     return comment.split("\n")[0];
 };
 
