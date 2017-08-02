@@ -10,6 +10,7 @@ services:
       TC_PASSWORD: teamcity-password
       SLACK_TOKEN: slack-oauth-access-token
       SLACK_CHANNEL: "#yourchannel"
+#      RELEASE_ARTIFACT: packaged-binaries.zip
 #      BUILD_WHITELIST: "Build1,Build2"
 #      DISPLAY_IGNORED_TESTS: false
 #      OMIT_TESTS_IF_PASSED: true

@@ -129,11 +129,14 @@ const agent = async (client, build) => {
 };
 
 const releaseLink = async (client, build) => {
+    const placeholder = "Release not available";
+    if (!process.env.RELEASE_ARTIFACT) {
+        return placeholder;
+    }
     const {file: files} = await client.artifact.children({id: build.id}, "");
-    const fileNames = ["release.zip", "packaged-binaries.zip"];
-    const release = files.find(file => fileNames.includes(file.name));
+    const release = files.find(file => file.name === process.env.RELEASE_ARTIFACT);
     if (!release) {
-        return "Release not available";
+        return placeholder;
     }
     return link(
         `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${release.name}`,
