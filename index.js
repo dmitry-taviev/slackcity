@@ -57,42 +57,54 @@ const listBuilds = async (client, beginWithID, whitelist) => {
 
 const slackSend = async (slack, tc, id, channel) => {
     const build = await detailsOfBuild(tc, id);
+    const fields = [
+        {
+            title: "Duration",
+            value: await durationOfBuild(tc, build.id),
+            short: true
+        },
+        {
+            title: "Agent",
+            value: await agent(tc, build),
+            short: true
+        },
+        {
+            title: "Status",
+            value: build.statusText,
+            short: true
+        },
+        {
+            title: "Download",
+            value: await releaseLink(tc, build),
+            short: true
+        }
+    ];
+    if (
+        !process.env.OMIT_TESTS_IF_PASSED ||
+        (process.env.OMIT_TESTS_IF_PASSED && build.status !== "SUCCESS")
+    ) {
+        fields.push({
+            title: "Tests",
+            value: await testStatus(tc, build)
+        });
+    }
+    const changes = await commits(tc, build);
+    if (
+        !process.env.OMIT_COMMITS_IF_NONE ||
+        (process.env.OMIT_COMMITS_IF_NONE && changes !== "Nothing changed")
+    ) {
+        fields.push({
+            title: "Commits",
+            value: changes
+        });
+    }
     return await slack.chat.postMessage(channel, null, {
         attachments: [{
             pretext: pretext(build),
             color: color(build),
             title: title(build),
             title_link: build.webUrl,
-            fields: [
-                {
-                    title: "Duration",
-                    value: await durationOfBuild(tc, build.id),
-                    short: true
-                },
-                {
-                    title: "Agent",
-                    value: await agent(tc, build),
-                    short: true
-                },
-                {
-                    title: "Status",
-                    value: build.statusText,
-                    short: true
-                },
-                {
-                    title: "Download",
-                    value: await releaseLink(tc, build),
-                    short: true
-                },
-                {
-                    title: "Tests",
-                    value: await testStatus(tc, build)
-                },
-                {
-                    title: "Commits",
-                    value: await commits(tc, build)
-                }
-            ],
+            fields,
             mrkdwn_in: ["pretext", "fields"]
         }],
     });
@@ -142,10 +154,25 @@ const detailsOfTest = async (client, id) => await client.httpClient.readJSON(`te
 
 const testEmoji = test => test.ignored ? ":okay:" : ":goberserk:";
 
-const failedTestLink = (build, test) => link(
-    `${build.webUrl}&tab=buildResultsDiv#testNameId${test.test.id}`,
-    `${testEmoji(test)} \`${test.name}\``
-);
+const failedTestLink = (build, test) => {
+    const testLink = link(
+        `${build.webUrl}&tab=buildResultsDiv#testNameId${test.test.id}`,
+        `${testEmoji(test)} \`${test.name}\``
+    );
+    if (test.status !== "FAILURE" || !process.env.TEST_REPORT_ARTIFACT) {
+        return testLink;
+    }
+    const [, timestamp] = test.details.exec(new RegExp('Screenshot: file:(?:.+)\\/tests\\/(.+)\\.png'));
+    if (typeof timestamp !== "undefined") {
+        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}/tests/${timestamp}.png`;
+        const screenshotLink = link(
+            `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${screenshot}`,
+            "[View screenshot]"
+        );
+        return `${screenshotLink} ${testLink}`;
+    }
+    return `${testLink}`;
+};
 
 const testStatus = async (client, build) => {
     let testStatus = ":rollsafe: There were no tests";
@@ -154,7 +181,9 @@ const testStatus = async (client, build) => {
     }
     try {
         const {testOccurrence: tests} = await listTests(client, build);
-        const failing = tests.filter(test => test.status !== "SUCCESS");
+        const failing = tests
+            .filter(test => test.status !== "SUCCESS")
+            .filter(test => process.env.DISPLAY_IGNORED_TESTS !== "false" || test.status !== "UNKNOWN");
         if (!failing.length) {
             testStatus = `:awesome: All ${tests.length} tests passed!`;
         } else {
@@ -254,7 +283,7 @@ const main = async () => {
             const lastBuilds = await lastFinishedBuilds(tc, whitelist);
             console.log("initial state:", lastBuilds);
             const lastIDs = Object.values(lastBuilds);
-            if (!sentBuilds.length) {
+            if (process.env.NODE_ENV !== "development" && !sentBuilds.length) {
                 lastIDs.forEach(id => sentBuilds.push(id));
             }
             let beginWithID = 0;
