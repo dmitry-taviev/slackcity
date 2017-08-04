@@ -83,9 +83,10 @@ const slackSend = async (slack, tc, id, channel) => {
         !process.env.OMIT_TESTS_IF_PASSED ||
         (process.env.OMIT_TESTS_IF_PASSED && build.status !== "SUCCESS")
     ) {
+        const tests = await testStatus(tc, build);
         fields.push({
             title: "Tests",
-            value: await testStatus(tc, build)
+            value: tests.split("\n").slice(0, 4).join("\n")
         });
     }
     const changes = await commits(tc, build);
@@ -157,10 +158,12 @@ const detailsOfTest = async (client, id) => await client.httpClient.readJSON(`te
 
 const testEmoji = test => test.ignored ? ":okay:" : ":goberserk:";
 
+const formatTestName = name => name.slice(process.env.TEST_PACKAGE ? process.env.TEST_PACKAGE.length + 1 : 0);
+
 const failedTestLink = (build, test) => {
     const testLink = link(
         `${build.webUrl}&tab=buildResultsDiv#testNameId${test.test.id}`,
-        `${testEmoji(test)} \`${test.name}\``
+        `${testEmoji(test)} \`${formatTestName(test.name)}\``
     );
     if (test.status !== "FAILURE" || !process.env.TEST_REPORT_ARTIFACT) {
         return testLink;
@@ -168,12 +171,12 @@ const failedTestLink = (build, test) => {
     const expr = new RegExp('Screenshot: file:(?:.+)\/tests\/(.+)\.png');
     const match = expr.exec(test.details);
     if (match !== null && typeof match[1] !== "undefined") {
-        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}/tests/${match[1]}.png`;
+        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}%21/tests/${match[1]}.png`;
         const screenshotLink = link(
             `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${screenshot}`,
-            "[View screenshot]"
+            ":frame_with_picture:"
         );
-        return `${screenshotLink} ${testLink}`;
+        return `${testLink} ${screenshotLink}`;
     }
     return `${testLink}`;
 };
