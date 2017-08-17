@@ -168,10 +168,10 @@ const failedTestLink = (build, test) => {
     if (test.status !== "FAILURE" || !process.env.TEST_REPORT_ARTIFACT) {
         return testLink;
     }
-    const expr = new RegExp('Screenshot: file:(?:.+)\/tests\/(.+)\.png');
+    const expr = new RegExp('Screenshot: file:(?:.+)\/tests\/com\/(.+)\.png');
     const match = expr.exec(test.details);
     if (match !== null && typeof match[1] !== "undefined") {
-        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}%21/tests/${match[1]}.png`;
+        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}%21/tests/com/${match[1]}.png`;
         const screenshotLink = link(
             `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${screenshot}`,
             ":frame_with_picture:"
