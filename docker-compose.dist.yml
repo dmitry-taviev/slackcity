@@ -17,3 +17,4 @@ services:
 #      TEST_REPORT_ARTIFACT: build-reports.zip
 #      TEST_PACKAGE: com.myproject.module.tests
 #      OMIT_COMMITS_IF_NONE: true
+#      GIT_PLATFORM: bitbucket

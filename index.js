@@ -215,10 +215,13 @@ const title = build => `Build "${build.buildType.name}" #${build.number} ${build
 
 const link = (href, text) => `<${href}|${text}>`;
 
-const commitLink = (revision, version) => link(
-        `https://github.com/${revision["vcs-root-instance"].name}/commit/${version}`,
-        `\`${version.substring(0, 8)}\``
-    );
+const commitLink = (revision, version) => {
+    let url = `https://github.com/${revision["vcs-root-instance"].name}/commit/${version}`;
+    if (process.env.GIT_PLATFORM === "bitbucket") {
+        url = `https://bitbucket.org/${revision["vcs-root-instance"].name}/commits/${version}`;
+    }
+    return link(url, `\`${version.substring(0, 8)}\``);
+};
 
 const commitMessage = async (client, changeId) => {
     const {comment} = await client.changes.detail(changeId);
