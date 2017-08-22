@@ -35,7 +35,7 @@ Next, set proper environment variable values. Variables with "\*" are required.
 |  TEST_REPORT_ARTIFACT |      build-reports.zip     |
 |      TEST_PACKAGE     | com.myproject.module.tests |
 |  OMIT_COMMITS_IF_NONE |            true            |
-|      GIT_PLATFORM     |       github|bitbucket     |
+|      GIT_PLATFORM     |     github or bitbucket    |
 
 Finally, run SlackCity and enjoy!
 
