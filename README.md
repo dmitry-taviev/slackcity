@@ -27,7 +27,7 @@ Next, set proper environment variable values. Variables with "\*" are required.
 |        TC_USER*       |      teamcity-username     |
 |      TC_PASSWORD*     |      teamcity-password     |
 |      SLACK_TOKEN*     |  slack-oauth-access-token  |
-|     SLACK_CHANNEL*    | #yourchannel               |
+|     SLACK_CHANNEL*    |        #yourchannel        |
 |    RELEASE_ARTIFACT   |    packaged-binaries.zip   |
 |    BUILD_WHITELIST    |        Build1,Build2       |
 | DISPLAY_IGNORED_TESTS |            false           |
@@ -35,6 +35,7 @@ Next, set proper environment variable values. Variables with "\*" are required.
 |  TEST_REPORT_ARTIFACT |      build-reports.zip     |
 |      TEST_PACKAGE     | com.myproject.module.tests |
 |  OMIT_COMMITS_IF_NONE |            true            |
+|      GIT_PLATFORM     |       github|bitbucket     |
 
 Finally, run SlackCity and enjoy!
 
