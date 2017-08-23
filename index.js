@@ -31,6 +31,8 @@ const lastBuild = async (client, typeID) => {
     const {build} = await client.build.list({
         project: process.env.TC_PROJECT,
         state: "finished",
+        canceled: false,
+        failedToStart: 'any',
         lookupLimit: 1,
         buildType: typeID
     });
@@ -44,6 +46,8 @@ const listBuilds = async (client, beginWithID, whitelist) => {
     const {build: unsorted} = await client.build.list({
         project: process.env.TC_PROJECT,
         state: 'finished',
+        canceled: false,
+        failedToStart: 'any',
         lookupLimit: 10,
     });
     if (typeof unsorted === "undefined") {
