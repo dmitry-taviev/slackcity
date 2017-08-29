@@ -90,7 +90,7 @@ const slackSend = async (slack, tc, id, channel) => {
         const tests = await testStatus(tc, build);
         fields.push({
             title: "Tests",
-            value: tests.split("\n").slice(0, 5).join("\n")
+            value: tests.split("\n").slice(0, 4).join("\n")
         });
     }
     const changes = await commits(tc, build);
