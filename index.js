@@ -139,7 +139,7 @@ const releaseLink = async (client, build) => {
         return placeholder;
     }
     const {file: files} = await client.artifact.children({id: build.id}, "");
-    const release = files.find(file => file.name === process.env.RELEASE_ARTIFACT);
+    const release = files.find(({name}) => name === process.env.RELEASE_ARTIFACT);
     if (!release) {
         return placeholder;
     }
@@ -164,7 +164,7 @@ const testEmoji = test => test.ignored ? ":okay:" : ":goberserk:";
 
 const formatTestName = name => name.slice(process.env.TEST_PACKAGE ? process.env.TEST_PACKAGE.length + 1 : 0);
 
-const failedTestLink = (build, test) => {
+const failedTestLink = async (client, build, test) => {
     const testLink = link(
         `${build.webUrl}&tab=buildResultsDiv#testNameId${test.test.id}`,
         `${testEmoji(test)} \`${formatTestName(test.name)}\``
@@ -174,6 +174,7 @@ const failedTestLink = (build, test) => {
     }
     const expr = new RegExp('Screenshot: file:(?:.+)\/tests\/com\/(.+)\.png');
     const match = expr.exec(test.details);
+    // if screenshot found in logs
     if (match !== null && typeof match[1] !== "undefined") {
         const screenshot = `${process.env.TEST_REPORT_ARTIFACT}%21/tests/com/${match[1]}.png`;
         const screenshotLink = link(
@@ -182,6 +183,22 @@ const failedTestLink = (build, test) => {
         );
         return `${testLink} ${screenshotLink}`;
     }
+    // trying to find in attachments
+    const testPath = test.name.replace(/\./g, "/");
+    const {file: testAttachments} = await client.artifact.children(
+        {id: build.id},
+        `${process.env.TEST_REPORT_ARTIFACT}%21/tests/${testPath}/`
+    );
+    const {name: foundName} = testAttachments.find(({name}) => name.endsWith(".png"));
+    if (foundName) {
+        const screenshot = `${process.env.TEST_REPORT_ARTIFACT}%21/tests/${testPath}/${foundName}`;
+        const screenshotLink = link(
+            `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${screenshot}`,
+            ":frame_with_picture:"
+        );
+        return `${testLink} ${screenshotLink}`;
+    }
+    // no luck finding screenshot
     return `${testLink}`;
 };
 
@@ -199,7 +216,8 @@ const testStatus = async (client, build) => {
             testStatus = `:awesome: All ${tests.length} tests passed!`;
         } else {
             testStatus = (await Promise.all(
-                failing.map(async test => failedTestLink(
+                failing.map(async test => await failedTestLink(
+                        client,
                         build,
                         await detailsOfTest(client, test.id)
                     ))
