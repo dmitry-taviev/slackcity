@@ -61,12 +61,15 @@ const listBuilds = async (client, beginWithID, whitelist) => {
 
 const slackSend = async (slack, tc, id, channel) => {
     const build = await detailsOfBuild(tc, id);
-    const fields = [
-        {
+    const fields = [];
+    if (!build.failedToStart) {
+        fields.push({
             title: "Duration",
             value: await durationOfBuild(tc, build.id),
             short: true
-        },
+        });
+    }
+    fields.push(
         {
             title: "Agent",
             value: await agent(tc, build),
@@ -76,22 +79,24 @@ const slackSend = async (slack, tc, id, channel) => {
             title: "Status",
             value: build.statusText,
             short: true
-        },
-        {
+        }
+    );
+    if (!build.failedToStart) {
+        fields.push({
             title: "Download",
             value: await releaseLink(tc, build),
             short: true
-        }
-    ];
-    if (
-        !process.env.OMIT_TESTS_IF_PASSED ||
-        (process.env.OMIT_TESTS_IF_PASSED && build.status !== "SUCCESS")
-    ) {
-        const tests = await testStatus(tc, build);
-        fields.push({
-            title: "Tests",
-            value: tests.split("\n").slice(0, 4).join("\n")
         });
+        if (
+            !process.env.OMIT_TESTS_IF_PASSED ||
+            (process.env.OMIT_TESTS_IF_PASSED && build.status !== "SUCCESS")
+        ) {
+            const tests = await testStatus(tc, build);
+            fields.push({
+                title: "Tests",
+                value: tests.split("\n").slice(0, 4).join("\n")
+            });
+        }
     }
     const changes = await commits(tc, build);
     if (
