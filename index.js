@@ -354,11 +354,10 @@ const main = async () => {
                     }
                 })
             );
-            running = false;
         } catch (err) {
             console.log("ERROR:", err);
-            running = false;
         }
+        running = false;
     };
 
     setInterval(async () => await loop(), timeout);
