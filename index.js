@@ -65,7 +65,7 @@ const slackSend = async (slack, tc, id, channel) => {
     if (!build.failedToStart) {
         fields.push({
             title: "Duration",
-            value: await durationOfBuild(tc, build.id),
+            value: await durationOfBuild(tc, id),
             short: true
         });
     }
@@ -82,11 +82,13 @@ const slackSend = async (slack, tc, id, channel) => {
         }
     );
     if (!build.failedToStart) {
-        fields.push({
-            title: "Download",
-            value: await releaseLink(tc, build),
-            short: true
-        });
+        if (process.env.RELEASE_ARTIFACT) {
+            fields.push({
+                title: "Download",
+                value: await releaseLink(tc, build),
+                short: true
+            });
+        }
         if (
             !process.env.OMIT_TESTS_IF_PASSED ||
             (process.env.OMIT_TESTS_IF_PASSED && build.status !== "SUCCESS")
@@ -139,14 +141,10 @@ const agent = async (client, build) => {
 };
 
 const releaseLink = async (client, build) => {
-    const placeholder = "Release not available";
-    if (!process.env.RELEASE_ARTIFACT) {
-        return placeholder;
-    }
     const {file: files} = await client.artifact.children({id: build.id}, "");
     const release = files.find(({name}) => name === process.env.RELEASE_ARTIFACT);
     if (!release) {
-        return placeholder;
+        return "Release not available";
     }
     return link(
         `https://${process.env.TC_HOST}/repository/download/${build.buildTypeId}/${build.id}:id/${release.name}`,
